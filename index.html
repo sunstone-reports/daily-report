@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SunStone Daily Report</title>
+<style>
+  :root{--bg:#10151d;--card:#171e29;--card2:#1d2635;--line:#2a3547;--txt:#eef2f7;--mut:#93a1b5;--acc:#e8590c;--acc2:#f76707;--ok:#2f9e44}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:0 14px 120px}
+  .wrap{max-width:640px;margin:0 auto}
+  header{padding:26px 4px 8px}
+  .brand{display:flex;align-items:center;gap:8px;color:var(--mut);letter-spacing:.14em;font-size:12px;font-weight:700;text-transform:uppercase}
+  .brand i{width:11px;height:11px;background:var(--acc);display:inline-block}
+  .logowrap{display:flex;justify-content:center;margin-bottom:8px}
+  h1{font-size:42px;line-height:1.05;margin:10px 0 8px;font-weight:800}
+  .sub{color:var(--mut);font-size:16px;line-height:1.45}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px;margin-top:18px}
+  .card h2{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:800}
+  .num{background:var(--acc);color:#fff;border-radius:50%;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+  .hint{color:var(--mut);font-size:14px;line-height:1.45;margin:8px 0 4px}
+  label{display:block;font-weight:700;font-size:16px;margin:16px 0 8px}
+  label .req{color:var(--acc2)}
+  label .opt{color:var(--mut);font-weight:400;font-size:13px}
+  input[type=text],input[type=date],textarea{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;color:var(--txt);font-size:16px;padding:14px}
+  textarea{min-height:96px;resize:vertical}
+  input:focus,textarea:focus{outline:2px solid var(--acc);border-color:transparent}
+  .auto{color:var(--ok);font-size:13px;margin-top:6px;display:none}
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:999px;padding:11px 18px;font-size:16px;cursor:pointer;user-select:none}
+  .chip.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+  .chip.dash{border-style:dashed}
+  .picker{position:relative}
+  .results{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card2);border:1px solid var(--line);border-radius:12px;max-height:264px;overflow:auto;z-index:30;display:none}
+  .results div{padding:13px 14px;font-size:15px;border-bottom:1px solid var(--line);cursor:pointer}
+  .results div:last-child{border-bottom:0}
+  .results div:active{background:var(--acc)}
+  .stepper{display:flex;gap:10px;align-items:stretch}
+  .stepper button{width:64px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font-size:28px;cursor:pointer}
+  .stepper .val{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;text-align:center;padding:10px 0}
+  .stepper .val b{font-size:30px;display:block;line-height:1}
+  .stepper .val span{color:var(--mut);font-size:11px;letter-spacing:.12em}
+  .quick{margin-top:10px}
+  .photozone{border:2px dashed var(--line);border-radius:14px;padding:20px 14px;text-align:center;margin-top:6px}
+  .photozone p{color:var(--mut);font-size:14px;line-height:1.45}
+  .addbtn{background:var(--acc);color:#fff;border:0;border-radius:999px;padding:13px 26px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px}
+  .thumbs{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .thumbs figure{position:relative;width:76px;height:76px}
+  .thumbs img{width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+  .thumbs button{position:absolute;top:-7px;right:-7px;width:24px;height:24px;border-radius:50%;border:0;background:#e03131;color:#fff;font-size:14px;cursor:pointer;line-height:1}
+  .count{color:var(--mut);font-size:13px;margin-top:10px;text-align:left}
+  .submitbar{position:fixed;left:0;right:0;bottom:0;background:rgba(16,21,29,.96);padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);z-index:40}
+  .submitbar .wrap{padding:0}
+  #submitBtn{width:100%;background:var(--acc);color:#fff;border:0;border-radius:14px;padding:17px;font-size:19px;font-weight:800;cursor:pointer}
+  #submitBtn:disabled{opacity:.55}
+  .err{color:#ff8787;font-size:14px;margin-top:10px;display:none}
+  #success{display:none;text-align:center;padding:44px 10px}
+  #success .big{font-size:54px}
+  #success h2{font-size:28px;margin:10px 0}
+  #success p{color:var(--mut);line-height:1.55;font-size:15px}
+  #success .learned{color:var(--ok);margin-top:10px}
+  #success button{margin-top:22px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:14px 22px;font-size:16px;cursor:pointer}
+  #loading{text-align:center;color:var(--mut);padding:50px 0;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logowrap"><svg viewBox="0 0 360 84" width="190" height="44" role="img" aria-label="SunStone Building Specialties"><text x="180" y="40" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="42" font-weight="bold" fill="#ffffff">SunStone</text><text x="180" y="70" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="15.5" letter-spacing="3.5" fill="#cbd5e1">BUILDING SPECIALTIES</text></svg></div>
+    <h1>Daily Report</h1>
+    <p class="sub">Takes about a minute. Fill it out before you leave the site.</p>
+  </header>
+
+  <div id="loading">Loading jobs&hellip;</div>
+
+  <form id="form" style="display:none" autocomplete="off">
+    <section class="card">
+      <h2><span class="num">1</span> Job</h2>
+      <p class="hint">Start typing the job name or number &mdash; no more scrolling a long list.</p>
+      <label for="date">Date <span class="req">*</span></label>
+      <input type="date" id="date" required>
+      <label for="jobSearch">Job Name <span class="req">*</span></label>
+      <div class="picker">
+        <input type="text" id="jobSearch" placeholder="Type to search &mdash; e.g. Four Seasons">
+        <div class="results" id="jobResults"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">2</span> The Work</h2>
+      <label for="address">Job Address <span class="req">*</span></label>
+      <input type="text" id="address" placeholder="Street address">
+      <div class="auto" id="addressAuto">&#10003; Auto-filled from a past report &mdash; type to change it.</div>
+      <label for="work">Work Performed <span class="req">*</span></label>
+      <textarea id="work" placeholder="What got done today &mdash; e.g. Hung pocket doors, patched astragal on C-suites&hellip;"></textarea>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">3</span> Crew &amp; Time on Site</h2>
+      <p class="hint">Tap everyone who was on site today.</p>
+      <label>Crew Members <span class="req">*</span></label>
+      <div class="chips" id="crewChips"></div>
+      <label>Hours Worked on Site <span class="req">*</span></label>
+      <div class="stepper">
+        <button type="button" id="hMinus">&minus;</button>
+        <div class="val"><b id="hVal">8</b><span>HOURS</span></div>
+        <button type="button" id="hPlus">+</button>
+      </div>
+      <div class="chips quick" id="hQuick"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">4</span> Details &amp; Photos</h2>
+      <label for="equipment">Equipment on Site <span class="req">*</span></label>
+      <input type="text" id="equipment" placeholder="Rentals / shop lifts &mdash; or None">
+      <label for="delays">Delays / Issues <span class="req">*</span></label>
+      <textarea id="delays" style="min-height:70px" placeholder="Anything that slowed the job down &mdash; waiting on GC, material, access&hellip;"></textarea>
+      <div class="chips" style="margin-top:9px">
+        <span class="chip dash" id="noDelays">&#10003; No delays today</span>
+      </div>
+      <label for="poc">Jobsite POC <span class="opt">(optional)</span></label>
+      <input type="text" id="poc" placeholder="Name + phone &mdash; e.g. Gary, (702) 555-0123">
+      <div class="auto" id="pocAuto">&#10003; Auto-filled from a past report &mdash; type to change it.</div>
+      <label>Jobsite Photos <span class="opt">(optional, up to 10)</span></label>
+      <div class="photozone">
+        <p>Progress, finished work, issues</p>
+        <button type="button" class="addbtn" id="addPhotos">+ Add photos</button>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+        <div class="count" id="photoCount">0 of 10 photos</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">5</span> Who&rsquo;s Filing This?</h2>
+      <p class="hint">Tap your name.</p>
+      <label>Submitted By <span class="req">*</span></label>
+      <div class="chips" id="leadChips"></div>
+    </section>
+
+    <div class="err" id="err"></div>
+  </form>
+
+  <div id="success">
+    <div class="big">&#9989;</div>
+    <h2>Report filed</h2>
+    <p id="successText"></p>
+    <p class="learned" id="learnedText"></p>
+    <button type="button" onclick="location.reload()">File another report</button>
+  </div>
+</div>
+
+<div class="submitbar" id="submitBar" style="display:none">
+  <div class="wrap">
+    <button id="submitBtn" type="button">Submit report</button>
+  </div>
+</div>
+
+<script>
+var DATA = null, selectedJob = '', hours = 8, photos = [];
+
+function baseName(job){
+  return String(job||'').replace(/\s*\((MF|SG|SF|KW|ST)\)\s*(\d{6})?\s*$/,'').replace(/\s+\d{6}\s*$/,'').trim();
+}
+function $(id){ return document.getElementById(id); }
+
+var API = 'https://script.google.com/macros/s/AKfycbysVSMHpZ4S93j95OQvAfuuzhT4l-IczAOgPDDXxcSvj0eCVGiLzP4UpaJk91sqKJ4/exec';
+fetch(API + '?api=bootstrap')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (!d || !d.jobs || !d.crew) throw new Error('bad bootstrap');
+    DATA = d;
+    $('loading').style.display = 'none';
+    $('form').style.display = 'block';
+    $('submitBar').style.display = 'block';
+    buildChips();
+  })
+  .catch(function(e){
+    $('loading').textContent = 'Could not load. Check your connection and reopen this page.';
+  });
+
+var today = new Date();
+$('date').value = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+function buildChips(){
+  var cc = $('crewChips'); cc.innerHTML = '';
+  DATA.crew.forEach(function(name){
+    var s = document.createElement('span'); s.className = 'chip'; s.textContent = name;
+    s.onclick = function(){ s.classList.toggle('on'); };
+    cc.appendChild(s);
+  });
+  var lc = $('leadChips'); lc.innerHTML = '';
+  DATA.leads.forEach(function(name){
+    var s = document.createElement('span'); s.className = 'chip'; s.textContent = name;
+    s.onclick = function(){
+      lc.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('on'); });
+      s.classList.add('on');
+    };
+    lc.appendChild(s);
+  });
+  var hq = $('hQuick'); hq.innerHTML = '';
+  [4,6,8,10,12].forEach(function(h){
+    var s = document.createElement('span'); s.className = 'chip'; s.textContent = h + ' hrs';
+    s.onclick = function(){ setHours(h); };
+    hq.appendChild(s);
+  });
+}
+
+/* --- Job picker + auto-fill --- */
+var search = $('jobSearch'), results = $('jobResults');
+search.addEventListener('input', function(){
+  selectedJob = '';
+  var q = search.value.toLowerCase().trim();
+  var matches = DATA.jobs.filter(function(j){ return j.toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
+  results.innerHTML = '';
+  matches.forEach(function(j){
+    var d = document.createElement('div'); d.textContent = j;
+    d.onclick = function(){ pickJob(j); };
+    results.appendChild(d);
+  });
+  results.style.display = matches.length ? 'block' : 'none';
+});
+search.addEventListener('focus', function(){ if (search.value) search.dispatchEvent(new Event('input')); });
+document.addEventListener('click', function(e){ if (!e.target.closest('.picker')) results.style.display = 'none'; });
+
+function pickJob(job){
+  selectedJob = job;
+  search.value = job;
+  results.style.display = 'none';
+  var entry = null;
+  for (var i = 0; i < DATA.directory.length; i++){
+    var d = DATA.directory[i];
+    if (d.job === job || baseName(d.job).toLowerCase() === baseName(job).toLowerCase()) { entry = d; break; }
+  }
+  if (entry){
+    if (entry.address){ $('address').value = entry.address; $('addressAuto').style.display = 'block'; }
+    if (entry.poc){ $('poc').value = entry.poc; $('pocAuto').style.display = 'block'; }
+  }
+}
+$('address').addEventListener('input', function(){ $('addressAuto').style.display = 'none'; });
+$('poc').addEventListener('input', function(){ $('pocAuto').style.display = 'none'; });
+
+/* --- Hours --- */
+function fmtH(h){ return (Math.round(h * 100) / 100).toString(); }
+function setHours(h){
+  hours = Math.min(16, Math.max(0, Math.round(h * 4) / 4));
+  $('hVal').textContent = fmtH(hours);
+}
+$('hMinus').onclick = function(){ setHours(hours - 0.25); };
+$('hPlus').onclick = function(){ setHours(hours + 0.25); };
+setHours(8);
+
+/* --- Delays shortcut --- */
+$('noDelays').onclick = function(){
+  var d = $('delays');
+  if (this.classList.contains('on')){ this.classList.remove('on'); d.value = ''; d.disabled = false; }
+  else { this.classList.add('on'); d.value = 'No delays'; d.disabled = true; }
+};
+
+/* --- Photos: downscale + base64 --- */
+$('addPhotos').onclick = function(){ $('fileInput').click(); };
+$('fileInput').addEventListener('change', function(){
+  var files = Array.prototype.slice.call(this.files);
+  this.value = '';
+  files.forEach(function(f){
+    if (photos.length >= 10) return;
+    var img = new Image();
+    img.onload = function(){
+      var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      var url = c.toDataURL('image/jpeg', 0.82);
+      photos.push({ name: f.name.replace(/\.[^.]+$/, '') + '.jpg', mime: 'image/jpeg', base64: url.split(',')[1], thumb: url });
+      renderThumbs();
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(f);
+  });
+});
+function renderThumbs(){
+  var t = $('thumbs'); t.innerHTML = '';
+  photos.forEach(function(p, i){
+    var fig = document.createElement('figure');
+    var im = document.createElement('img'); im.src = p.thumb;
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = '\u00D7';
+    b.onclick = function(){ photos.splice(i, 1); renderThumbs(); };
+    fig.appendChild(im); fig.appendChild(b); t.appendChild(fig);
+  });
+  $('photoCount').textContent = photos.length + ' of 10 photos';
+}
+
+/* --- Submit --- */
+function showErr(msg){ var e = $('err'); e.textContent = msg; e.style.display = 'block'; e.scrollIntoView({behavior:'smooth', block:'center'}); }
+$('submitBtn').onclick = function(){
+  $('err').style.display = 'none';
+  var crew = Array.prototype.map.call($('crewChips').querySelectorAll('.chip.on'), function(c){ return c.textContent; });
+  var lead = $('leadChips').querySelector('.chip.on');
+  if (!selectedJob) return showErr('Pick the job from the list so it matches the office records.');
+  if (!$('date').value) return showErr('Date is required.');
+  if (!$('address').value.trim()) return showErr('Job Address is required.');
+  if (!$('work').value.trim()) return showErr('Work Performed is required.');
+  if (!crew.length) return showErr('Tap at least one crew member.');
+  if (!(hours > 0)) return showErr('Hours must be more than 0.');
+  if (!$('equipment').value.trim()) return showErr('Equipment on Site is required (write None if there was none).');
+  if (!$('delays').value.trim()) return showErr('Delays / Issues is required (or tap "No delays today").');
+  if (!lead) return showErr('Tap your name under Submitted By.');
+
+  var btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Sending\u2026';
+  var payload = {
+    date: $('date').value, jobName: selectedJob, jobAddress: $('address').value.trim(),
+    workPerformed: $('work').value.trim(), crew: crew, hours: hours,
+    equipment: $('equipment').value.trim(), delays: $('delays').value.trim(),
+    poc: $('poc').value.trim(), submittedBy: lead.textContent,
+    photos: photos.map(function(p){ return { name: p.name, mime: p.mime, base64: p.base64 }; })
+  };
+  fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+    .then(function(r){ return r.json(); })
+    .then(function(r){
+      if (!r || !r.ok) throw new Error((r && r.error) || 'send failed');
+      $('form').style.display = 'none'; $('submitBar').style.display = 'none';
+      var s = $('success'); s.style.display = 'block';
+      $('successText').textContent = selectedJob + ' \u00B7 ' + fmtH(hours) + ' hrs \u00B7 ' + crew.length + ' crew \u00B7 ' + (r.photoCount || 0) + ' photos. The office has it.';
+      if (r.learned) $('learnedText').textContent = 'Saved this address / POC for ' + baseName(selectedJob) + ' \u2014 next time it auto-fills.';
+      window.scrollTo(0, 0);
+    })
+    .catch(function(e){
+      btn.disabled = false; btn.textContent = 'Submit report';
+      showErr('Something went wrong sending the report. Your entries are still here \u2014 try Submit again.');
+    });
+};
+</script>
+</body>
+</html>
