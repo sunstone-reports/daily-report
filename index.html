@@ -60,6 +60,16 @@
   .tw-total .val{font-size:19px;font-weight:800}
   .tw-total.warn{background:rgba(224,49,49,.10);border-color:rgba(224,49,49,.5)}
   .sug{cursor:pointer;text-decoration:underline}
+  .pocBox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+  .pocHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .pocHead .t{font-size:13px;font-weight:800;letter-spacing:.12em;color:var(--mut)}
+  .pocHead .x{width:28px;height:28px;border-radius:50%;border:0;background:#e03131;color:#fff;font-size:15px;cursor:pointer;line-height:1}
+  .pocBox input[type=text]{background:var(--card)}
+  .pocBox .sub{display:block;font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--mut);margin:12px 0 7px}
+  .selWrap{position:relative}
+  .selWrap select{width:100%;appearance:none;-webkit-appearance:none;background:var(--card);border:1px solid var(--line);border-radius:12px;color:var(--txt);font-size:16px;padding:14px;padding-right:40px}
+  .selWrap:after{content:"\25BE";position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:18px;pointer-events:none}
+  .pocCount{color:var(--mut);font-size:13px;margin-top:9px}
   .photozone{border:2px dashed var(--line);border-radius:14px;padding:20px 14px;text-align:center;margin-top:6px}
   .photozone p{color:var(--mut);font-size:14px;line-height:1.45}
   .addbtn{background:var(--acc);color:#fff;border:0;border-radius:999px;padding:13px 26px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px}
@@ -150,9 +160,10 @@
       <div class="chips" style="margin-top:9px">
         <span class="chip dash" id="noDelays">&#10003; No delays today</span>
       </div>
-      <label for="poc">Jobsite POC <span class="opt">(optional)</span></label>
-      <input type="text" id="poc" placeholder="Name + phone &mdash; e.g. Gary, (702) 555-0123">
-      <div class="auto" id="pocAuto">&#10003; Auto-filled from a past report &mdash; type to change it.</div>
+      <label>Jobsite POC <span class="opt">(optional)</span></label>
+      <div id="pocList"></div>
+      <button type="button" class="addbtn" id="addPoc">+ Add another POC</button>
+      <div class="pocCount" id="pocCount"></div>
       <label>Jobsite Photos <span class="opt">(optional, up to 10)</span></label>
       <div class="photozone">
         <p>Progress, finished work, issues</p>
@@ -256,6 +267,7 @@ function pickJob(job){
   selectedJob = job;
   search.value = job;
   results.style.display = 'none';
+  $('pocList').innerHTML = ''; addPoc('', POC_TITLES[0], false);
   var entry = null;
   for (var i = 0; i < DATA.directory.length; i++){
     var d = DATA.directory[i];
@@ -263,11 +275,75 @@ function pickJob(job){
   }
   if (entry){
     if (entry.address){ addressSuggestion = entry.address; var aa = $('addressAuto'); aa.innerHTML = 'Last address used: <b></b> &mdash; tap to use it'; aa.querySelector('b').textContent = entry.address; aa.style.display = 'block'; }
-    if (entry.poc){ $('poc').value = entry.poc; $('pocAuto').style.display = 'block'; }
+    if (entry.poc){
+      var parsed = parsePocs(entry.poc);
+      if (parsed.length){ $('pocList').innerHTML = ''; parsed.forEach(function(p, i){ addPoc(p.name, p.title, i === 0); }); }
+    }
   }
 }
 $('addressAuto').onclick = function(){ if (addressSuggestion){ $('address').value = addressSuggestion; $('addressAuto').style.display = 'none'; } };
-$('poc').addEventListener('input', function(){ $('pocAuto').style.display = 'none'; });
+/* --- Jobsite POCs: up to 5, each with a title --- */
+var POC_TITLES = ['Superintendent', 'Assistant Superintendent', 'Project Manager', 'Framing Foreman', 'Drywall Foreman'];
+var POC_MAX = 5;
+function pocOptions(sel){
+  return POC_TITLES.map(function(t){ return '<option' + (t === sel ? ' selected' : '') + '>' + t + '</option>'; }).join('');
+}
+function makePocBox(name, title, autoFilled){
+  var box = document.createElement('div'); box.className = 'pocBox';
+  box.innerHTML = '<div class="pocHead"><span class="t"></span></div>' +
+    '<input type="text" placeholder="Name + phone &mdash; e.g. Gary, (702) 555-0123">' +
+    '<label class="sub">TITLE</label>' +
+    '<div class="selWrap"><select>' + pocOptions(title) + '</select></div>';
+  box.querySelector('input').value = name || '';
+  if (autoFilled){
+    var note = document.createElement('div'); note.className = 'auto'; note.id = 'pocAuto';
+    note.innerHTML = '&#10003; Auto-filled from a past report &mdash; type to change it.'; note.style.display = 'block';
+    box.appendChild(note);
+    box.querySelector('input').addEventListener('input', function(){ note.style.display = 'none'; });
+  }
+  return box;
+}
+function refreshPocs(){
+  var boxes = $('pocList').querySelectorAll('.pocBox');
+  boxes.forEach(function(box, i){
+    box.querySelector('.pocHead .t').textContent = 'POC ' + (i + 1);
+    var head = box.querySelector('.pocHead'), x = head.querySelector('.x');
+    if (i > 0 && !x){
+      x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '\u2715';
+      x.onclick = function(){ box.remove(); refreshPocs(); };
+      head.appendChild(x);
+    }
+    if (i === 0 && x) x.remove();
+  });
+  $('pocCount').textContent = boxes.length + ' of ' + POC_MAX + ' POCs';
+  $('addPoc').style.display = boxes.length >= POC_MAX ? 'none' : '';
+}
+function addPoc(name, title, autoFilled){
+  if ($('pocList').querySelectorAll('.pocBox').length >= POC_MAX) return;
+  $('pocList').appendChild(makePocBox(name, title, autoFilled));
+  refreshPocs();
+}
+function parsePocs(stored){
+  if (!stored) return [];
+  return stored.split(' \u00B7 ').map(function(entry){
+    entry = entry.trim();
+    for (var i = 0; i < POC_TITLES.length; i++){
+      var suffix = ' \u2014 ' + POC_TITLES[i];
+      if (entry.slice(-suffix.length) === suffix) return { name: entry.slice(0, -suffix.length), title: POC_TITLES[i] };
+    }
+    return { name: entry, title: POC_TITLES[0] };
+  }).filter(function(p){ return p.name; }).slice(0, POC_MAX);
+}
+function buildPocString(){
+  var out = [];
+  $('pocList').querySelectorAll('.pocBox').forEach(function(box){
+    var name = box.querySelector('input').value.trim();
+    if (name) out.push(name + ' \u2014 ' + box.querySelector('select').value);
+  });
+  return out.join(' \u00B7 ');
+}
+$('addPoc').onclick = function(){ addPoc('', POC_TITLES[0], false); };
+addPoc('', POC_TITLES[0], false);
 
 /* --- Hours: computed from the arrival / departure wheels below --- */
 function fmtH(h){ return (Math.round(h * 100) / 100).toString(); }
@@ -398,7 +474,7 @@ $('submitBtn').onclick = function(){
     date: $('date').value, jobName: selectedJob, jobAddress: $('address').value.trim(),
     workPerformed: $('work').value.trim(), crew: crew, hours: hours, arrival: arrivalStr, departure: departureStr,
     equipment: $('equipment').value.trim(), delays: $('delays').value.trim(),
-    poc: $('poc').value.trim(), submittedBy: lead.textContent,
+    poc: buildPocString(), submittedBy: lead.textContent,
     photos: photos.map(function(p){ return { name: p.name, mime: p.mime, base64: p.base64 }; })
   };
   fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
