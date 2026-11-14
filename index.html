@@ -41,6 +41,24 @@
   .stepper .val b{font-size:30px;display:block;line-height:1}
   .stepper .val span{color:var(--mut);font-size:11px;letter-spacing:.12em}
   .quick{margin-top:10px}
+  .tw-wheel{background:var(--card2);border:1px solid var(--line);border-radius:14px;display:flex;justify-content:center;gap:6px;padding:0 10px;position:relative}
+  .tw-band{position:absolute;left:10px;right:10px;top:50%;height:46px;transform:translateY(-50%);border-top:1.5px solid var(--acc);border-bottom:1.5px solid var(--acc);border-radius:8px;background:rgba(232,89,12,.07);pointer-events:none;z-index:3}
+  .tw-fadeT,.tw-fadeB{position:absolute;left:0;right:0;height:64px;pointer-events:none;z-index:2}
+  .tw-fadeT{top:0;background:linear-gradient(var(--card2),rgba(29,38,53,0))}
+  .tw-fadeB{bottom:0;background:linear-gradient(rgba(29,38,53,0),var(--card2))}
+  .tw-col{height:230px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;flex:0 0 74px;z-index:1}
+  .tw-col::-webkit-scrollbar{display:none}
+  .tw-col.ap{flex-basis:64px}
+  .tw-sp{height:92px}
+  .tw-it{height:46px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--mut);scroll-snap-align:center;user-select:none}
+  .tw-it.sel{color:var(--txt);font-weight:800;font-size:23px}
+  .tw-head{display:flex;justify-content:center;gap:6px;padding:0 10px;margin-bottom:6px}
+  .tw-head span{flex:0 0 74px;text-align:center;font-size:11px;letter-spacing:.14em;color:var(--mut);font-weight:700}
+  .tw-head span:last-child{flex-basis:64px}
+  .tw-total{margin-top:16px;background:rgba(47,158,68,.10);border:1px solid rgba(47,158,68,.45);border-radius:12px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center}
+  .tw-total .lab{font-size:15px;color:var(--mut);font-weight:600}
+  .tw-total .val{font-size:19px;font-weight:800}
+  .tw-total.warn{background:rgba(224,49,49,.10);border-color:rgba(224,49,49,.5)}
   .photozone{border:2px dashed var(--line);border-radius:14px;padding:20px 14px;text-align:center;margin-top:6px}
   .photozone p{color:var(--mut);font-size:14px;line-height:1.45}
   .addbtn{background:var(--acc);color:#fff;border:0;border-radius:999px;padding:13px 26px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px}
@@ -100,13 +118,26 @@
       <p class="hint">Tap everyone who was on site today.</p>
       <label>Crew Members <span class="req">*</span></label>
       <div class="chips" id="crewChips"></div>
-      <label>Hours Worked on Site <span class="req">*</span></label>
-      <div class="stepper">
-        <button type="button" id="hMinus">&minus;</button>
-        <div class="val"><b id="hVal">8</b><span>HOURS</span></div>
-        <button type="button" id="hPlus">+</button>
+      <label>Jobsite Arrival <span class="req">*</span></label>
+      <div class="tw-head"><span>HOUR</span><span>MIN</span><span></span></div>
+      <div class="tw-wheel" id="wheelArr">
+        <div class="tw-fadeT"></div><div class="tw-fadeB"></div><div class="tw-band"></div>
+        <div class="tw-col" data-part="h"></div>
+        <div class="tw-col" data-part="m"></div>
+        <div class="tw-col ap" data-part="ap"></div>
       </div>
-      <div class="chips quick" id="hQuick"></div>
+      <label>Jobsite Departure <span class="req">*</span></label>
+      <div class="tw-head"><span>HOUR</span><span>MIN</span><span></span></div>
+      <div class="tw-wheel" id="wheelDep">
+        <div class="tw-fadeT"></div><div class="tw-fadeB"></div><div class="tw-band"></div>
+        <div class="tw-col" data-part="h"></div>
+        <div class="tw-col" data-part="m"></div>
+        <div class="tw-col ap" data-part="ap"></div>
+      </div>
+      <div class="tw-total" id="totalRow">
+        <span class="lab">Total time on site</span>
+        <span class="val" id="totalVal"></span>
+      </div>
     </section>
 
     <section class="card">
@@ -173,6 +204,7 @@ fetch(API + '?api=bootstrap')
     $('loading').style.display = 'none';
     $('form').style.display = 'block';
     $('submitBar').style.display = 'block';
+    initWheels();
     buildChips();
   })
   .catch(function(e){
@@ -197,12 +229,6 @@ function buildChips(){
       s.classList.add('on');
     };
     lc.appendChild(s);
-  });
-  var hq = $('hQuick'); hq.innerHTML = '';
-  [4,6,8,10,12].forEach(function(h){
-    var s = document.createElement('span'); s.className = 'chip'; s.textContent = h + ' hrs';
-    s.onclick = function(){ setHours(h); };
-    hq.appendChild(s);
   });
 }
 
@@ -240,15 +266,73 @@ function pickJob(job){
 $('address').addEventListener('input', function(){ $('addressAuto').style.display = 'none'; });
 $('poc').addEventListener('input', function(){ $('pocAuto').style.display = 'none'; });
 
-/* --- Hours --- */
+/* --- Hours: computed from the arrival / departure wheels below --- */
 function fmtH(h){ return (Math.round(h * 100) / 100).toString(); }
-function setHours(h){
-  hours = Math.min(16, Math.max(0, Math.round(h * 4) / 4));
-  $('hVal').textContent = fmtH(hours);
+
+/* --- Arrival / departure time wheels --- */
+var ROWH = 46;
+function twFill(col, values){
+  var html = '<div class="tw-sp"></div>';
+  values.forEach(function(v){ html += '<div class="tw-it">' + v + '</div>'; });
+  col.innerHTML = html + '<div class="tw-sp"></div>';
 }
-$('hMinus').onclick = function(){ setHours(hours - 0.25); };
-$('hPlus').onclick = function(){ setHours(hours + 0.25); };
-setHours(8);
+function twIndex(col){ return Math.round(col.scrollTop / ROWH); }
+function twPaint(col){
+  var idx = twIndex(col), items = col.querySelectorAll('.tw-it');
+  for (var i = 0; i < items.length; i++) items[i].classList.toggle('sel', i === idx);
+}
+function twSet(col, idx){ col.scrollTop = idx * ROWH; twPaint(col); }
+function twRead(wheel){
+  function sel(part){
+    var col = wheel.querySelector('[data-part="' + part + '"]');
+    return col.querySelectorAll('.tw-it')[twIndex(col)].textContent;
+  }
+  var h = parseInt(sel('h'), 10), m = parseInt(sel('m'), 10), ap = sel('ap');
+  var hh = h % 12; if (ap === 'PM') hh += 12;
+  return { minutes: hh * 60 + m, label: h + ':' + sel('m') + ' ' + ap };
+}
+function fmtDur(mins){
+  var h = Math.floor(mins / 60), m = mins % 60, out = '';
+  if (h) out = h + (h === 1 ? ' hr' : ' hrs');
+  if (m) out += (out ? ' ' : '') + m + ' min';
+  return out || '0 min';
+}
+var arrivalStr = '', departureStr = '';
+function twUpdate(){
+  var a = twRead($('wheelArr')), d = twRead($('wheelDep'));
+  arrivalStr = a.label; departureStr = d.label;
+  var row = $('totalRow'), val = $('totalVal');
+  if (d.minutes > a.minutes){
+    hours = Math.round((d.minutes - a.minutes) / 60 * 100) / 100;
+    row.classList.remove('warn'); val.textContent = fmtDur(d.minutes - a.minutes);
+  } else {
+    hours = 0;
+    row.classList.add('warn'); val.textContent = 'Check times \u2014 departure is first';
+  }
+}
+function twWire(wheel, def){
+  var hours12 = [], mins = [], i;
+  for (i = 1; i <= 12; i++) hours12.push(i);
+  for (i = 0; i < 60; i += 5) mins.push(('0' + i).slice(-2));
+  var ch = wheel.querySelector('[data-part="h"]'), cm = wheel.querySelector('[data-part="m"]'), ca = wheel.querySelector('[data-part="ap"]');
+  twFill(ch, hours12); twFill(cm, mins); twFill(ca, ['AM', 'PM']);
+  [ch, cm, ca].forEach(function(col){
+    var t;
+    col.addEventListener('scroll', function(){
+      twPaint(col);
+      clearTimeout(t);
+      t = setTimeout(function(){ twSet(col, twIndex(col)); twUpdate(); }, 110);
+    }, { passive: true });
+  });
+  twSet(ch, hours12.indexOf(def.h)); twSet(cm, mins.indexOf(def.m)); twSet(ca, def.ap === 'PM' ? 1 : 0);
+}
+var wheelsInit = false;
+function initWheels(){
+  if (wheelsInit) return; wheelsInit = true;
+  twWire($('wheelArr'), { h: 5, m: '30', ap: 'AM' });
+  twWire($('wheelDep'), { h: 2, m: '00', ap: 'PM' });
+  twUpdate();
+}
 
 /* --- Delays shortcut --- */
 $('noDelays').onclick = function(){
@@ -301,7 +385,7 @@ $('submitBtn').onclick = function(){
   if (!$('address').value.trim()) return showErr('Job Address is required.');
   if (!$('work').value.trim()) return showErr('Work Performed is required.');
   if (!crew.length) return showErr('Tap at least one crew member.');
-  if (!(hours > 0)) return showErr('Hours must be more than 0.');
+  if (!(hours > 0)) return showErr('Check the times \u2014 departure must be after arrival.');
   if (!$('equipment').value.trim()) return showErr('Equipment on Site is required (write None if there was none).');
   if (!$('delays').value.trim()) return showErr('Delays / Issues is required (or tap "No delays today").');
   if (!lead) return showErr('Tap your name under Submitted By.');
@@ -309,7 +393,7 @@ $('submitBtn').onclick = function(){
   var btn = $('submitBtn'); btn.disabled = true; btn.textContent = 'Sending\u2026';
   var payload = {
     date: $('date').value, jobName: selectedJob, jobAddress: $('address').value.trim(),
-    workPerformed: $('work').value.trim(), crew: crew, hours: hours,
+    workPerformed: $('work').value.trim(), crew: crew, hours: hours, arrival: arrivalStr, departure: departureStr,
     equipment: $('equipment').value.trim(), delays: $('delays').value.trim(),
     poc: $('poc').value.trim(), submittedBy: lead.textContent,
     photos: photos.map(function(p){ return { name: p.name, mime: p.mime, base64: p.base64 }; })
@@ -320,7 +404,7 @@ $('submitBtn').onclick = function(){
       if (!r || !r.ok) throw new Error((r && r.error) || 'send failed');
       $('form').style.display = 'none'; $('submitBar').style.display = 'none';
       var s = $('success'); s.style.display = 'block';
-      $('successText').textContent = selectedJob + ' \u00B7 ' + fmtH(hours) + ' hrs \u00B7 ' + crew.length + ' crew \u00B7 ' + (r.photoCount || 0) + ' photos. The office has it.';
+      $('successText').textContent = selectedJob + ' \u00B7 ' + arrivalStr + ' \u2013 ' + departureStr + ' \u00B7 ' + fmtH(hours) + ' hrs \u00B7 ' + crew.length + ' crew \u00B7 ' + (r.photoCount || 0) + ' photos. The office has it.';
       if (r.learned) $('learnedText').textContent = 'Saved this address / POC for ' + baseName(selectedJob) + ' \u2014 next time it auto-fills.';
       window.scrollTo(0, 0);
     })
