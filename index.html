@@ -9,7 +9,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{background:var(--bg);color:var(--txt);font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:0 14px 120px}
   .wrap{max-width:640px;margin:0 auto}
-  header{padding:26px 4px 8px}
+  header{padding:26px 4px 8px;text-align:center}
   .brand{display:flex;align-items:center;gap:8px;color:var(--mut);letter-spacing:.14em;font-size:12px;font-weight:700;text-transform:uppercase}
   .brand i{width:11px;height:11px;background:var(--acc);display:inline-block}
   .logowrap{display:flex;justify-content:center;margin-bottom:8px}
@@ -104,7 +104,14 @@
 
   <form id="form" style="display:none" autocomplete="off">
     <section class="card">
-      <h2><span class="num">1</span> Job</h2>
+      <h2><span class="num">1</span> Who&rsquo;s Filing This?</h2>
+      <p class="hint">Tap your name.</p>
+      <label>Submitted By <span class="req">*</span></label>
+      <div class="chips" id="leadChips"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="num">2</span> Job</h2>
       <p class="hint">Start typing the job name or number &mdash; no more scrolling a long list.</p>
       <label for="date">Date <span class="req">*</span></label>
       <input type="date" id="date" required>
@@ -116,7 +123,7 @@
     </section>
 
     <section class="card">
-      <h2><span class="num">2</span> The Work</h2>
+      <h2><span class="num">3</span> The Work</h2>
       <label for="address">Job Address <span class="req">*</span></label>
       <input type="text" id="address" placeholder="Street address">
       <div class="auto sug" id="addressAuto" title="Tap to use this address"></div>
@@ -125,7 +132,7 @@
     </section>
 
     <section class="card">
-      <h2><span class="num">3</span> Crew &amp; Time on Site</h2>
+      <h2><span class="num">4</span> Crew &amp; Time on Site</h2>
       <p class="hint">Tap everyone who was on site today.</p>
       <label>Crew Members <span class="req">*</span></label>
       <div class="chips" id="crewChips"></div>
@@ -152,7 +159,7 @@
     </section>
 
     <section class="card">
-      <h2><span class="num">4</span> Details &amp; Photos</h2>
+      <h2><span class="num">5</span> Details &amp; Photos</h2>
       <label for="equipment">Equipment on Site <span class="req">*</span></label>
       <input type="text" id="equipment" placeholder="Rentals / shop lifts &mdash; or None">
       <label for="delays">Delays / Issues <span class="req">*</span></label>
@@ -172,13 +179,6 @@
         <div class="thumbs" id="thumbs"></div>
         <div class="count" id="photoCount">0 of 10 photos</div>
       </div>
-    </section>
-
-    <section class="card">
-      <h2><span class="num">5</span> Who&rsquo;s Filing This?</h2>
-      <p class="hint">Tap your name.</p>
-      <label>Submitted By <span class="req">*</span></label>
-      <div class="chips" id="leadChips"></div>
     </section>
 
     <div class="err" id="err"></div>
