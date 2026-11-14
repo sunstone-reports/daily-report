@@ -59,6 +59,7 @@
   .tw-total .lab{font-size:15px;color:var(--mut);font-weight:600}
   .tw-total .val{font-size:19px;font-weight:800}
   .tw-total.warn{background:rgba(224,49,49,.10);border-color:rgba(224,49,49,.5)}
+  .sug{cursor:pointer;text-decoration:underline}
   .photozone{border:2px dashed var(--line);border-radius:14px;padding:20px 14px;text-align:center;margin-top:6px}
   .photozone p{color:var(--mut);font-size:14px;line-height:1.45}
   .addbtn{background:var(--acc);color:#fff;border:0;border-radius:999px;padding:13px 26px;font-size:16px;font-weight:700;cursor:pointer;margin-top:12px}
@@ -108,7 +109,7 @@
       <h2><span class="num">2</span> The Work</h2>
       <label for="address">Job Address <span class="req">*</span></label>
       <input type="text" id="address" placeholder="Street address">
-      <div class="auto" id="addressAuto">&#10003; Auto-filled from a past report &mdash; type to change it.</div>
+      <div class="auto sug" id="addressAuto" title="Tap to use this address"></div>
       <label for="work">Work Performed <span class="req">*</span></label>
       <textarea id="work" placeholder="What got done today &mdash; e.g. Hung pocket doors, patched astragal on C-suites&hellip;"></textarea>
     </section>
@@ -236,6 +237,7 @@ function buildChips(){
 var search = $('jobSearch'), results = $('jobResults');
 search.addEventListener('input', function(){
   selectedJob = '';
+  addressSuggestion = ''; $('addressAuto').style.display = 'none';
   var q = search.value.toLowerCase().trim();
   var matches = DATA.jobs.filter(function(j){ return j.toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
   results.innerHTML = '';
@@ -249,6 +251,7 @@ search.addEventListener('input', function(){
 search.addEventListener('focus', function(){ if (search.value) search.dispatchEvent(new Event('input')); });
 document.addEventListener('click', function(e){ if (!e.target.closest('.picker')) results.style.display = 'none'; });
 
+var addressSuggestion = '';
 function pickJob(job){
   selectedJob = job;
   search.value = job;
@@ -259,11 +262,11 @@ function pickJob(job){
     if (d.job === job || baseName(d.job).toLowerCase() === baseName(job).toLowerCase()) { entry = d; break; }
   }
   if (entry){
-    if (entry.address){ $('address').value = entry.address; $('addressAuto').style.display = 'block'; }
+    if (entry.address){ addressSuggestion = entry.address; var aa = $('addressAuto'); aa.innerHTML = 'Last address used: <b></b> &mdash; tap to use it'; aa.querySelector('b').textContent = entry.address; aa.style.display = 'block'; }
     if (entry.poc){ $('poc').value = entry.poc; $('pocAuto').style.display = 'block'; }
   }
 }
-$('address').addEventListener('input', function(){ $('addressAuto').style.display = 'none'; });
+$('addressAuto').onclick = function(){ if (addressSuggestion){ $('address').value = addressSuggestion; $('addressAuto').style.display = 'none'; } };
 $('poc').addEventListener('input', function(){ $('pocAuto').style.display = 'none'; });
 
 /* --- Hours: computed from the arrival / departure wheels below --- */
